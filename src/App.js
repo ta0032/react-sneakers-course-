@@ -1,57 +1,111 @@
 import React from "react";
-import Card from "./components/Card";
+import axios from "axios";
+import { Routes, Route } from "react-router-dom";
 import Header from "./components/Header";
 import Drawer from "./components/Drawer";
-
-const arr = [
-  {
-    title: "Мужские Кроссовки Nike Blazer Mid Suede",
-    price: 12999,
-    imageUrl: "/img/sneakers/1.jpg",
-  },
-  {
-    title: "Мужские Кроссовки Nike Air Max 270",
-    price: 15499,
-    imageUrl: "/img/sneakers/2.jpg",
-  },
-  {
-    title: "Мужские Кроссовки Nike Blazer Mid Suede",
-    price: 8499,
-    imageUrl: "/img/sneakers/3.jpg",
-  },
-  {
-    title: "Кроссовки Puma X Aka Boku Future Rider",
-    price: 8999,
-    imageUrl: "/img/sneakers/4.jpg",
-  },
-];
+import Home from "./components/Pages/Home";
+import Favorites from "./components/Pages/Favorites";
 
 function App() {
+  const [items, setItems] = React.useState([]);
+  const [cartItems, setCartItems] = React.useState([]);
+  const [favorites, setFavorites] = React.useState([]);
+  const [searchValue, setSearchValue] = React.useState("");
   const [cartOpened, setCartOpened] = React.useState(false);
+
+  React.useEffect(() => {
+    axios
+      .get("https://638f2c579cbdb0dbe31f1e52.mockapi.io/items")
+      .then((res) => {
+        setItems(res.data);
+      });
+    axios
+      .get("https://638f2c579cbdb0dbe31f1e52.mockapi.io/cart")
+      .then((res) => {
+        setCartItems(res.data);
+      });
+    axios
+      .get("https://638f2c579cbdb0dbe31f1e52.mockapi.io/favorites")
+      .then((res) => {
+        setFavorites(res.data);
+      });
+  }, []);
+
+  const onAddFavorites = async (obj) => {
+    try {
+      if (favorites.find((favObj) => favObj.id === obj.id)) {
+        axios.delete(
+          `https://638f2c579cbdb0dbe31f1e52.mockapi.io/favorites/${obj.id}`
+        );
+      } else {
+        const { data } = await axios.post(
+          "https://638f2c579cbdb0dbe31f1e52.mockapi.io/favorites",
+          obj
+        );
+        setFavorites((prev) => [...prev, data]);
+      }
+    } catch (error) {
+      alert("Не удалось добавить в фавориты");
+    }
+  };
+
+  const onAddToCart = (obj) => {
+    if (cartItems.find((obj) => obj.id === obj.id)) {
+      axios.delete(
+        `https://638f2c579cbdb0dbe31f1e52.mockapi.io/cart/${obj.id}`
+      );
+      setCartItems((prev) => prev.filter((item) => item.id !== obj.id));
+    } else {
+      axios.post("https://638f2c579cbdb0dbe31f1e52.mockapi.io/cart", obj);
+      setCartItems((prev) => [...prev, obj]);
+    }
+  };
+
+  const onRemoveItem = (id) => {
+    axios.delete(`https://638f2c579cbdb0dbe31f1e52.mockapi.io/cart/${id}`);
+    setCartItems((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const onChangeSearchInput = (event) => {
+    setSearchValue(event.target.value);
+  };
+
   return (
     <div className="wrapper clear">
-      {cartOpened && <Drawer onClose={() => setCartOpened(false)} />}
+      {cartOpened && (
+        <Drawer
+          items={cartItems}
+          onClose={() => setCartOpened(false)}
+          onRemove={onRemoveItem}
+        />
+      )}
       <Header onClickCart={() => setCartOpened(true)} />
-      <div className="content p-40">
-        <div className="d-flex align-center justify-between mb-40">
-          <h1>Все кроссовки</h1>
-          <div className="search-block d-flex">
-            <img src="/img/search.svg" alt="Search" />
-            <input placeholder="Поиск..." type="" />
-          </div>
-        </div>
-        <div className="d-flex">
-          {arr.map((obj) => (
-            <Card
-              title={obj.title}
-              price={obj.price}
-              imageUrl={obj.imageUrl}
-              onFavorite={() => alert("Добавили в закладки")}
-              onPlus={() => alert("Добавили в корзину")}
+
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <Home
+              items={items}
+              searchValue={searchValue}
+              setSearchValue={setSearchValue}
+              onChangeSearchInput={onChangeSearchInput}
+              onAddFavorites={onAddFavorites}
+              onAddToCart={onAddToCart}
             />
-          ))}
-        </div>
-      </div>
+          }
+        />
+        <Route
+          path="/favorites"
+          element={
+            <Favorites
+              items={favorites}
+              onAddFavorites={onAddFavorites}
+              onAddToCart={onAddToCart}
+            />
+          }
+        />
+      </Routes>
     </div>
   );
 }
