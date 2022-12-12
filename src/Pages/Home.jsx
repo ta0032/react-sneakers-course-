@@ -9,6 +9,7 @@ function Home({
   onAddFavorites,
   onAddToCart,
   isLoading,
+  opened,
 }) {
   const renderItems = () => {
     const filtredItems = items.filter((item) =>

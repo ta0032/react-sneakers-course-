@@ -1,14 +1,15 @@
 import React from "react";
-import AppContext from "../context";
-import Info from "./info";
 import axios from "axios";
+
+import Info from "../info";
+import { useCart } from "../../hooks/useCart";
+
+import styles from "./Drawer.module.scss";
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-function Drawer({ onRemove, items = [] }) {
-  const { cartItems, setCartOpened, setCartItems } =
-    React.useContext(AppContext);
-
+function Drawer({ onRemove, items = [], opened }) {
+  const { cartItems, setCartItems, setCartOpened, totalPrice } = useCart();
   const [orderCompleted, setOrderCompleted] = React.useState(false);
   const [orderId, setOrderId] = React.useState(null);
   const [isLoadOrder, setIsLoadOrder] = React.useState(false);
@@ -22,7 +23,6 @@ function Drawer({ onRemove, items = [] }) {
       );
       for (let i = 0; i < cartItems.length; i++) {
         const item = cartItems[i];
-        console.log(item);
         await axios.delete(
           "https://638f2c579cbdb0dbe31f1e52.mockapi.io/cart/" + item.id
         );
@@ -38,8 +38,8 @@ function Drawer({ onRemove, items = [] }) {
   };
 
   return (
-    <div className="overlay">
-      <div className="drawer">
+    <div className={`${styles.overlay} ${opened ? styles.overlayVisible : ""}`}>
+      <div className={styles.drawer}>
         <h2 className="d-flex justify-between mb-30">
           Корзина
           <img
@@ -52,7 +52,7 @@ function Drawer({ onRemove, items = [] }) {
 
         {items.length > 0 ? (
           <div className="d-flex flex-column flex">
-            <div className="items">
+            <div className="items flex">
               {items.map((obj) => (
                 <div
                   key={obj.id}
@@ -68,7 +68,7 @@ function Drawer({ onRemove, items = [] }) {
                   </div>
                   <img
                     className="removeBtn"
-                    onClick={(id) => {
+                    onClick={() => {
                       onRemove(obj.id);
                     }}
                     src="/img/btn-remove.svg"
@@ -82,12 +82,12 @@ function Drawer({ onRemove, items = [] }) {
                 <li>
                   <span>Итого</span>
                   <div></div>
-                  <b>21 498 руб.</b>
+                  <b>{totalPrice} руб.</b>
                 </li>
                 <li>
                   <span>Налог 5%:</span>
                   <div></div>
-                  <b>1074 руб.</b>
+                  <b>{(totalPrice * 0.05).toFixed(2)} руб.</b>
                 </li>
               </ul>
               <button
